@@ -1,0 +1,26 @@
+export type Bathroom = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address?: string | null;
+  place_description?: string | null;
+  free_or_paid: "free" | "paid" | "unknown";
+  price_if_known?: string | null;
+  opening_hours?: string | null;
+  wheelchair_accessible: boolean;
+  step_free_access: boolean;
+  baby_changing: boolean;
+  gender_neutral: boolean;
+  family_friendly: boolean;
+  requires_code: boolean;
+  code_hint?: string | null;
+  status: "open" | "closed" | "uncertain" | "under_review";
+  cleanliness_avg: number;
+  safety_avg: number;
+  accessibility_avg: number;
+  trust_score: number;
+  number_of_confirmations: number;
+  report_count: number;
+  last_verified_at?: string | null;
+};

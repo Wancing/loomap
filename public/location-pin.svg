@@ -1,0 +1,17 @@
+<svg viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#01696f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#005053;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M 100 20 C 145 20 180 55 180 100 C 180 155 100 260 100 260 C 100 260 20 155 20 100 C 20 55 55 20 100 20 Z" fill="url(#pinGradient)"/>
+    <circle cx="100" cy="95" r="25" fill="#ffffff" opacity="0.9"/>
+    <circle cx="95" cy="90" r="5" fill="#01696f"/>
+  </g>
+  <text x="100" y="280" font-size="12" text-anchor="middle" fill="#28251d">Location Pin</text>
+</svg>

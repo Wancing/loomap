@@ -1,0 +1,17 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bathroomGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bathroomGradient)"/>
+  <circle cx="100" cy="50" r="15" fill="#01696f"/>
+  <rect x="75" y="70" width="50" height="60" fill="#01696f"/>
+  <circle cx="85" cy="85" r="6" fill="#ffffff"/>
+  <circle cx="115" cy="85" r="6" fill="#ffffff"/>
+  <path d="M 90 110 L 85 130 L 95 130 L 92 110" fill="#ffffff"/>
+  <path d="M 110 110 L 105 130 L 115 130 L 112 110" fill="#ffffff"/>
+  <rect x="60" y="150" width="80" height="35" fill="#01696f" rx="5"/>
+  <text x="100" y="178" font-size="12" text-anchor="middle" fill="#ffffff" font-weight="bold">Bathroom</text>
+</svg>
