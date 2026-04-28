@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { bathrooms } from "@/lib/mock-data";
 import { Logo } from "@/components/logo";
 import { TrustBadge } from "@/components/trust-badge";
@@ -5,6 +8,7 @@ import SimpleMap from "@/components/map/simple-map";
 import { Bathroom } from "@/lib/types";
 
 export default function HomePage() {
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
   return (
     <main className="container-shell space-y-6">
       <header className="flex flex-col gap-4 rounded-[28px] border border-zinc-200 bg-white/80 p-4 shadow-sm">
