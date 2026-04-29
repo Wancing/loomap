@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { bathrooms } from "@/lib/mock-data";
+import { useMemo, useState, useEffect } from "react";
 import { Logo } from "@/components/logo";
 import { TrustBadge } from "@/components/trust-badge";
 import SimpleMap from "@/components/map/simple-map";
@@ -74,6 +73,40 @@ export default function HomePage() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [bathrooms, setBathrooms] = useState<Bathroom[]>([]);
+  const [isLoadingBathrooms, setIsLoadingBathrooms] = useState(false);
+
+  useEffect(() => {
+    const fetchBathrooms = async () => {
+      setIsLoadingBathrooms(true);
+      
+      try {
+        const params = new URLSearchParams();
+        
+        if (userLocation) {
+          params.set("lat", userLocation.latitude.toString());
+          params.set("lon", userLocation.longitude.toString());
+          params.set("radius", "5000");
+        }
+
+        const response = await fetch(`/api/bathrooms?${params.toString()}`);
+        
+        if (!response.ok) {
+          console.error("Failed to fetch bathrooms");
+          return;
+        }
+
+        const data = await response.json();
+        setBathrooms(data.bathrooms || []);
+      } catch (error) {
+        console.error("Error fetching bathrooms:", error);
+      } finally {
+        setIsLoadingBathrooms(false);
+      }
+    };
+
+    fetchBathrooms();
+  }, [userLocation]);
 
   const toggleFilter = (filter: FilterLabel) => {
     setActiveFilters((current) =>
@@ -203,7 +236,7 @@ export default function HomePage() {
       });
 
     return results;
-  }, [activeFilters, searchQuery, userLocation]);
+  }, [activeFilters, searchQuery, userLocation, bathrooms]);
 
   return (
     <main className="container-shell space-y-6">
@@ -323,7 +356,11 @@ export default function HomePage() {
           <SimpleMap bathrooms={filteredBathrooms} userLocation={userLocation} />
 
           <div className="space-y-4">
-            {filteredBathrooms.length > 0 ? (
+            {isLoadingBathrooms ? (
+              <div className="card-surface p-6 text-sm text-zinc-600">
+                Loading nearby bathrooms...
+              </div>
+            ) : filteredBathrooms.length > 0 ? (
               filteredBathrooms.map((bathroom) => (
                 <article key={bathroom.id} className="card-surface p-4">
                   <div className="space-y-3">
@@ -391,7 +428,11 @@ export default function HomePage() {
         </section>
       ) : (
         <section className="space-y-4">
-          {filteredBathrooms.length > 0 ? (
+          {isLoadingBathrooms ? (
+            <div className="card-surface p-6 text-sm text-zinc-600">
+              Loading nearby bathrooms...
+            </div>
+          ) : filteredBathrooms.length > 0 ? (
             filteredBathrooms.map((bathroom) => (
               <article key={bathroom.id} className="card-surface p-4">
                 <div className="space-y-3">

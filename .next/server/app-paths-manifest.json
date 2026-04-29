@@ -1,3 +1,4 @@
 {
+  "/api/bathrooms/route": "app/api/bathrooms/route.js",
   "/page": "app/page.js"
 }
