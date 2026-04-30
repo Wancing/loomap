@@ -1,8 +1,38 @@
 import db from "./init";
 import type { Bathroom } from "../types";
 
-// Ensure database is initialized
 db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='bathrooms'").get();
+
+function rowToBathroom(row: any): Bathroom {
+  return {
+    id: row.id,
+    name: row.name,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    address: row.address,
+    place_description: row.place_description,
+    free_or_paid: row.free_or_paid,
+    price_if_known: row.price_if_known,
+    opening_hours: row.opening_hours,
+    wheelchair_accessible: Boolean(row.wheelchair_accessible),
+    step_free_access: Boolean(row.step_free_access),
+    baby_changing: Boolean(row.baby_changing),
+    gender_neutral: Boolean(row.gender_neutral),
+    family_friendly: Boolean(row.family_friendly),
+    requires_code: Boolean(row.requires_code),
+    code_hint: row.code_hint,
+    status: row.status,
+    cleanliness_avg: row.cleanliness_avg ?? 3.5,
+    safety_avg: row.safety_avg ?? 3.5,
+    accessibility_avg: row.accessibility_avg ?? 3.5,
+    trust_score: row.trust_score ?? 50,
+    number_of_confirmations: row.number_of_confirmations ?? 0,
+    report_count: row.report_count ?? 0,
+    last_verified_at: row.last_verified_at,
+    created_at: row.created_at,
+    photos: [],
+  };
+}
 
 export function saveBathroom(data: {
   name: string;
@@ -56,70 +86,19 @@ export function saveBathroom(data: {
 }
 
 export function getAllBathrooms(): Bathroom[] {
-  const stmt = db.prepare(`
-    SELECT * FROM bathrooms WHERE status != 'rejected' ORDER BY created_at DESC
-  `);
+  const rows = db
+    .prepare(
+      `SELECT * FROM bathrooms WHERE status != 'rejected' ORDER BY created_at DESC`
+    )
+    .all() as any[];
 
-  const rows = stmt.all() as any[];
-
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    latitude: row.latitude,
-    longitude: row.longitude,
-    address: row.address,
-    place_description: row.place_description,
-    free_or_paid: row.free_or_paid,
-    price_if_known: row.price_if_known,
-    opening_hours: row.opening_hours,
-    wheelchair_accessible: Boolean(row.wheelchair_accessible),
-    step_free_access: Boolean(row.step_free_access),
-    baby_changing: Boolean(row.baby_changing),
-    gender_neutral: Boolean(row.gender_neutral),
-    family_friendly: Boolean(row.family_friendly),
-    requires_code: Boolean(row.requires_code),
-    code_hint: row.code_hint,
-    status: row.status,
-    cleanliness_avg: row.cleanliness_avg,
-    safety_avg: row.safety_avg,
-    accessibility_avg: row.accessibility_avg,
-    trust_score: row.trust_score,
-    number_of_confirmations: row.number_of_confirmations,
-    report_count: row.report_count,
-    last_verified_at: row.last_verified_at,
-  }));
+  return rows.map(rowToBathroom);
 }
 
 export function getBathroomById(id: string): Bathroom | null {
-  const stmt = db.prepare("SELECT * FROM bathrooms WHERE id = ?");
-  const row = stmt.get(id) as any;
+  const row = db
+    .prepare("SELECT * FROM bathrooms WHERE id = ?")
+    .get(id) as any;
 
-  if (!row) return null;
-
-  return {
-    id: row.id,
-    name: row.name,
-    latitude: row.latitude,
-    longitude: row.longitude,
-    address: row.address,
-    place_description: row.place_description,
-    free_or_paid: row.free_or_paid,
-    price_if_known: row.price_if_known,
-    opening_hours: row.opening_hours,
-    wheelchair_accessible: Boolean(row.wheelchair_accessible),
-    step_free_access: Boolean(row.step_free_access),
-    baby_changing: Boolean(row.baby_changing),
-    gender_neutral: Boolean(row.gender_neutral),
-    family_friendly: Boolean(row.family_friendly),
-    requires_code: Boolean(row.requires_code),
-    code_hint: row.code_hint,
-    status: row.status,
-    cleanliness_avg: row.cleanliness_avg,
-    safety_avg: row.safety_avg,
-    accessibility_avg: row.accessibility_avg,
-    trust_score: row.trust_score,
-    number_of_confirmations: row.number_of_confirmations,
-    report_count: row.report_count,
-    last_verified_at: row.last_verified_at,
-  };
+  return row ? rowToBathroom(row) : null;
 }
