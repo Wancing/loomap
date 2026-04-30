@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { saveBathroom, getAllBathrooms } from "@/lib/db/bathrooms";
 
 type OverpassElement = {
   type: "node" | "way" | "relation";
@@ -91,6 +92,10 @@ export async function GET(request: NextRequest) {
   const lon = parseFloat(searchParams.get("lon") || "-9.1393");
   const radius = parseInt(searchParams.get("radius") || "5000", 10);
 
+  // Get user-submitted bathrooms from database
+  const userBathrooms = getAllBathrooms();
+
+  // Get OSM bathrooms from Overpass API
   const query = `[out:json][timeout:25];(node["amenity"="toilets"](around:${radius},${lat},${lon});way["amenity"="toilets"](around:${radius},${lat},${lon});relation["amenity"="toilets"](around:${radius},${lat},${lon}););out center tags;`;
 
   try {
@@ -104,24 +109,47 @@ export async function GET(request: NextRequest) {
       body: `data=${encodeURIComponent(query)}`,
     });
 
-    if (!response.ok) {
-      console.error("Overpass API error:", response.status, response.statusText);
-      
-      // Fallback to empty array instead of error
-      return NextResponse.json({ bathrooms: [] });
+    let osmBathrooms: any[] = [];
+
+    if (response.ok) {
+      const data: OverpassResponse = await response.json();
+      osmBathrooms = data.elements
+        .filter((element) => element.tags && (element.lat || element.center))
+        .map((element, index) => transformOverpassToBathroom(element, index));
     }
 
-    const data: OverpassResponse = await response.json();
+    // Combine user-submitted and OSM bathrooms
+    const allBathrooms = [...userBathrooms, ...osmBathrooms];
 
-    const bathrooms = data.elements
-      .filter((element) => element.tags && (element.lat || element.center))
-      .map((element, index) => transformOverpassToBathroom(element, index));
-
-    return NextResponse.json({ bathrooms });
+    return NextResponse.json({ bathrooms: allBathrooms });
   } catch (error) {
     console.error("Error fetching from Overpass API:", error);
     
-    // Return empty array instead of 500 error
-    return NextResponse.json({ bathrooms: [] });
+    // Return only user-submitted bathrooms if OSM fails
+    return NextResponse.json({ bathrooms: userBathrooms });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    console.log("Received bathroom submission:", body);
+
+    const id = saveBathroom(body);
+
+    console.log("Bathroom saved with ID:", id);
+
+    return NextResponse.json({ 
+      success: true, 
+      id,
+      message: "Bathroom submitted successfully and pending review" 
+    });
+  } catch (error) {
+    console.error("Error saving bathroom:", error);
+    return NextResponse.json(
+      { error: "Failed to save bathroom", details: String(error) },
+      { status: 500 }
+    );
   }
 }

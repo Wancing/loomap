@@ -74,26 +74,48 @@ export default function AddBathroomPage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!formData.name.trim()) {
-      alert("Please enter a name for this bathroom.");
-      return;
+  if (!formData.name.trim()) {
+    alert("Please enter a name for this bathroom.");
+    return;
+  }
+
+  if (formData.latitude === 0 || formData.longitude === 0) {
+    alert("Please set the bathroom location.");
+    return;
+  }
+
+  console.log("Submitting form data:", formData);
+  setIsSubmitting(true);
+
+  try {
+    const response = await fetch("/api/bathrooms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    console.log("Response status:", response.status);
+    const result = await response.json();
+    console.log("Response body:", result);
+
+    if (!response.ok) {
+      throw new Error("Failed to submit bathroom");
     }
-
-    if (formData.latitude === 0 || formData.longitude === 0) {
-      alert("Please set the bathroom location.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    setTimeout(() => {
-      alert("Bathroom submitted! (This will save to database in the next step)");
-      router.push("/");
-    }, 1000);
-  };
+    
+    alert(`Bathroom submitted successfully! It will appear after review. ID: ${result.id}`);
+    router.push("/");
+  } catch (error) {
+    console.error("Error submitting bathroom:", error);
+    alert("Failed to submit bathroom. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const updateField = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
