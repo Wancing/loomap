@@ -254,6 +254,13 @@ export default function HomePage() {
           >
             {isLocating ? "Finding your location..." : "Use my location"}
           </button>
+          <button
+  type="button"
+  onClick={() => router.push("/add")}
+  className="rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800"
+>
+  + Add bathroom
+</button>
         </div>
 
         <div className="space-y-2">
