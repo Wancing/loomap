@@ -20,6 +20,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/bathroom/[id]/page.js"
+    ],
+    "/api/bathrooms/[id]/verify/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/bathrooms/[id]/verify/route.js"
     ]
   }
 }

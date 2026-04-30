@@ -1,5 +1,6 @@
 {
   "/api/bathrooms/route": "app/api/bathrooms/route.js",
+  "/api/bathrooms/[id]/verify/route": "app/api/bathrooms/[id]/verify/route.js",
   "/page": "app/page.js",
   "/bathroom/[id]/page": "app/bathroom/[id]/page.js"
 }

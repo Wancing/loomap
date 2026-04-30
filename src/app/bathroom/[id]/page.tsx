@@ -12,6 +12,8 @@ export default function BathroomDetailPage() {
   const router = useRouter();
   const [bathroom, setBathroom] = useState<Bathroom | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState("");
 
   useEffect(() => {
     const fetchBathroom = async () => {
@@ -43,6 +45,43 @@ export default function BathroomDetailPage() {
       fetchBathroom();
     }
   }, [params.id]);
+
+  const handleVerify = async () => {
+    if (!bathroom) return;
+
+    setIsVerifying(true);
+    setVerificationMessage("");
+
+    try {
+      const response = await fetch(`/api/bathrooms/${bathroom.id}/verify`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to verify bathroom");
+      }
+
+      const result = await response.json();
+      
+      setVerificationMessage(result.message);
+      
+      // Update local bathroom data
+      setBathroom({
+        ...bathroom,
+        number_of_confirmations: result.confirmations,
+        status: result.status,
+        trust_score: result.trustScore,
+      });
+
+      // Clear message after 5 seconds
+      setTimeout(() => setVerificationMessage(""), 5000);
+    } catch (error) {
+      console.error("Error verifying bathroom:", error);
+      setVerificationMessage("Failed to verify. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -146,6 +185,54 @@ export default function BathroomDetailPage() {
             trustScore={bathroom.trust_score}
             confirmations={bathroom.number_of_confirmations}
           />
+
+          {bathroom.status === "pending_review" && (
+            <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-900">
+                    This bathroom is pending community review
+                  </p>
+                  <p className="mt-1 text-xs text-amber-700">
+                    Have you visited this location? Help verify it for the community.
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleVerify}
+                disabled={isVerifying}
+                className="w-full rounded-full bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isVerifying ? "Confirming..." : "✓ Confirm this location"}
+              </button>
+
+              {verificationMessage && (
+                <p className="text-sm font-medium text-amber-900">
+                  {verificationMessage}
+                </p>
+              )}
+            </div>
+          )}
+
+          {bathroom.status === "open" && bathroom.number_of_confirmations > 0 && (
+            <button
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="w-full rounded-full border border-teal-700 bg-white px-4 py-2.5 text-sm font-medium text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isVerifying ? "Confirming..." : "✓ I've been here too"}
+            </button>
+          )}
+
+          {verificationMessage && bathroom.status === "open" && (
+            <p className="rounded-lg bg-teal-50 p-3 text-sm font-medium text-teal-900">
+              {verificationMessage}
+            </p>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl bg-zinc-50 p-4 text-center">
