@@ -1,40 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Logo } from "@/components/logo";
+import { PhotoUpload } from "@/components/photo-upload";
 
-type FormData = {
-  name: string;
-  latitude: number;
-  longitude: number;
-  address: string;
-  place_description: string;
-  free_or_paid: "free" | "paid" | "unknown";
-  price_if_known: string;
-  opening_hours: string;
-  wheelchair_accessible: boolean;
-  step_free_access: boolean;
-  baby_changing: boolean;
-  gender_neutral: boolean;
-  family_friendly: boolean;
-  requires_code: boolean;
-  code_hint: string;
-};
+const MapWithNoSSR = dynamic(() => import("@/components/location-picker-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-64 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50">
+      <p className="text-sm text-zinc-500">Loading map...</p>
+    </div>
+  ),
+});
 
 export default function AddBathroomPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
-  const [locationError, setLocationError] = useState("");
-
-  const [formData, setFormData] = useState<FormData>({
+  const [photos, setPhotos] = useState<string[]>([]);
+  
+  const [formData, setFormData] = useState({
     name: "",
-    latitude: 0,
-    longitude: 0,
-    address: "",
     place_description: "",
-    free_or_paid: "unknown",
+    latitude: 38.7223,
+    longitude: -9.1393,
+    address: "",
+    free_or_paid: "free" as "free" | "paid" | "unknown",
     price_if_known: "",
     opening_hours: "",
     wheelchair_accessible: false,
@@ -44,81 +36,62 @@ export default function AddBathroomPage() {
     family_friendly: false,
     requires_code: false,
     code_hint: "",
+    notes: "",
   });
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported in this browser.");
-      return;
-    }
-
-    setLocationError("");
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setFormData((prev) => ({
-          ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        }));
-        setUseCurrentLocation(true);
-        setLocationError("");
-      },
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) {
-          setLocationError("Location permission was denied.");
-        } else {
-          setLocationError("Could not get your location.");
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData((prev) => ({
+            ...prev,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          }));
+        },
+        (error) => {
+          console.error("Error getting location:", error);
         }
-      }
-    );
+      );
+    }
+  }, []);
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  if (!formData.name.trim()) {
-    alert("Please enter a name for this bathroom.");
-    return;
-  }
+    try {
+      const response = await fetch("/api/bathrooms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          photos,
+        }),
+      });
 
-  if (formData.latitude === 0 || formData.longitude === 0) {
-    alert("Please set the bathroom location.");
-    return;
-  }
+      if (!response.ok) {
+        throw new Error("Failed to add bathroom");
+      }
 
-  console.log("Submitting form data:", formData);
-  setIsSubmitting(true);
-
-  try {
-    const response = await fetch("/api/bathrooms", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-
-    console.log("Response status:", response.status);
-    const result = await response.json();
-    console.log("Response body:", result);
-
-    if (!response.ok) {
-      throw new Error("Failed to submit bathroom");
+      const result = await response.json();
+      router.push(`/bathroom/${result.id}`);
+    } catch (error) {
+      console.error("Error adding bathroom:", error);
+      alert("Failed to add bathroom. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    alert(`Bathroom submitted successfully! It will appear after review. ID: ${result.id}`);
-    router.push("/");
-  } catch (error) {
-    console.error("Error submitting bathroom:", error);
-    alert("Failed to submit bathroom. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-  const updateField = (field: keyof FormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -130,216 +103,289 @@ export default function AddBathroomPage() {
           onClick={() => router.push("/")}
           className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
         >
-          ← Cancel
+          Cancel
         </button>
       </header>
 
-      <div className="card-surface p-6">
-        <div className="mb-6">
-          <h1 className="mb-2 text-2xl font-semibold">Add a new bathroom</h1>
-          <p className="text-sm text-zinc-600">
-            Help the community by adding a public bathroom you know about.
+      <div className="card-surface overflow-hidden">
+        <div className="border-b border-zinc-200 bg-gradient-to-r from-teal-50 to-blue-50 p-6">
+          <h1 className="text-2xl font-semibold text-zinc-900">Add a Bathroom</h1>
+          <p className="mt-1 text-sm text-zinc-600">
+            Help the community by adding a public bathroom
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <h2 className="font-semibold text-zinc-900">Location</h2>
-
-            {!useCurrentLocation ? (
-              <button
-                type="button"
-                onClick={handleGetLocation}
-                className="w-full rounded-full bg-teal-700 px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-800"
-              >
-                Use my current location
-              </button>
-            ) : (
-              <div className="rounded-lg bg-white p-3 text-sm">
-                <p className="font-medium text-teal-700">✓ Location set</p>
-                <p className="text-xs text-zinc-600">
-                  {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}
-                </p>
-              </div>
-            )}
-
-            {locationError && (
-              <p className="text-sm text-rose-600">{locationError}</p>
-            )}
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Or enter coordinates manually
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  step="any"
-                  placeholder="Latitude"
-                  value={formData.latitude || ""}
-                  onChange={(e) =>
-                    updateField("latitude", parseFloat(e.target.value) || 0)
-                  }
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
-                />
-                <input
-                  type="number"
-                  step="any"
-                  placeholder="Longitude"
-                  value={formData.longitude || ""}
-                  onChange={(e) =>
-                    updateField("longitude", parseFloat(e.target.value) || 0)
-                  }
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
-                />
-              </div>
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+          {/* Basic Info */}
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-zinc-900">Basic Information</h2>
+
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Name <span className="text-rose-600">*</span>
+              <label className="block text-sm font-medium text-zinc-700">
+                Name or description <span className="text-red-600">*</span>
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g., Starbucks Bathroom, City Hall Restroom"
                 value={formData.name}
-                onChange={(e) => updateField("name", e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Starbucks Restroom, City Hall Bathroom"
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Address
+              <label className="block text-sm font-medium text-zinc-700">
+                Place description
               </label>
               <input
                 type="text"
-                placeholder="Street address or nearest landmark"
-                value={formData.address}
-                onChange={(e) => updateField("address", e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+                value={formData.place_description}
+                onChange={(e) => setFormData({ ...formData, place_description: e.target.value })}
+                placeholder="e.g., Inside shopping center, 2nd floor"
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Description / Tips
-              </label>
-              <textarea
-                placeholder="e.g., Inside shopping center, 2nd floor. Ask staff for code."
-                value={formData.place_description}
-                onChange={(e) => updateField("place_description", e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+              <label className="block text-sm font-medium text-zinc-700">Address</label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Street address or nearby landmark"
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
 
+          {/* Location Picker */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-zinc-700">
+              Location <span className="text-red-600">*</span>
+            </label>
+            <p className="text-xs text-zinc-500">
+              Tap on the map to set the exact location
+            </p>
+            <MapWithNoSSR
+              center={[formData.latitude, formData.longitude]}
+              onLocationSelect={handleLocationSelect}
+            />
+          </div>
+
+          {/* Photos */}
+          <div className="space-y-2">
+            <PhotoUpload
+              onPhotosChange={setPhotos}
+              maxPhotos={5}
+            />
+          </div>
+
+          {/* Pricing */}
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-zinc-900">Pricing</h2>
+
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
+              <label className="block text-sm font-medium text-zinc-700">
                 Free or paid?
               </label>
               <select
                 value={formData.free_or_paid}
                 onChange={(e) =>
-                  updateField("free_or_paid", e.target.value as "free" | "paid" | "unknown")
+                  setFormData({
+                    ...formData,
+                    free_or_paid: e.target.value as "free" | "paid" | "unknown",
+                  })
                 }
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <option value="unknown">Unknown</option>
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
+                <option value="unknown">Unknown</option>
               </select>
             </div>
 
             {formData.free_or_paid === "paid" && (
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-zinc-700">
                   Price (if known)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g., €0.50, $1"
                   value={formData.price_if_known}
-                  onChange={(e) => updateField("price_if_known", e.target.value)}
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+                  onChange={(e) =>
+                    setFormData({ ...formData, price_if_known: e.target.value })
+                  }
+                  placeholder="e.g., €0.50, $1.00"
+                  className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
             )}
+          </div>
+
+          {/* Hours & Access */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-zinc-900">Hours & Access</h2>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
+              <label className="block text-sm font-medium text-zinc-700">
                 Opening hours
               </label>
               <input
                 type="text"
-                placeholder="e.g., 24/7, Mo-Fr 08:00-20:00"
                 value={formData.opening_hours}
-                onChange={(e) => updateField("opening_hours", e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+                onChange={(e) =>
+                  setFormData({ ...formData, opening_hours: e.target.value })
+                }
+                placeholder="e.g., 24/7, Mon-Fri 9am-6pm"
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
-          </div>
 
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <h2 className="font-semibold text-zinc-900">Accessibility Features</h2>
-
-            <div className="space-y-2">
-              {[
-                { field: "wheelchair_accessible", label: "Wheelchair accessible" },
-                { field: "step_free_access", label: "Step-free access" },
-                { field: "baby_changing", label: "Baby changing table" },
-                { field: "gender_neutral", label: "Gender-neutral" },
-                { field: "family_friendly", label: "Family-friendly" },
-              ].map(({ field, label }) => (
-                <label
-                  key={field}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg bg-white p-3 text-sm transition hover:bg-zinc-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData[field as keyof FormData] as boolean}
-                    onChange={(e) => updateField(field as keyof FormData, e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-teal-700"
-                  />
-                  <span className="text-zinc-700">{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="flex cursor-pointer items-center gap-3 text-sm">
+            <div className="flex items-center gap-2">
               <input
                 type="checkbox"
+                id="requires_code"
                 checked={formData.requires_code}
-                onChange={(e) => updateField("requires_code", e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-teal-700"
+                onChange={(e) =>
+                  setFormData({ ...formData, requires_code: e.target.checked })
+                }
+                className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
               />
-              <span className="font-medium text-zinc-700">Requires access code or key</span>
-            </label>
+              <label htmlFor="requires_code" className="text-sm text-zinc-700">
+                Requires code or key
+              </label>
+            </div>
 
             {formData.requires_code && (
-              <input
-                type="text"
-                placeholder="e.g., Ask staff for code, customers only"
-                value={formData.code_hint}
-                onChange={(e) => updateField("code_hint", e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
-              />
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">
+                  Code hint
+                </label>
+                <input
+                  type="text"
+                  value={formData.code_hint}
+                  onChange={(e) =>
+                    setFormData({ ...formData, code_hint: e.target.value })
+                  }
+                  placeholder="e.g., Ask staff, Written on receipt"
+                  className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
             )}
           </div>
 
+          {/* Accessibility Features */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-zinc-900">
+              Accessibility Features
+            </h2>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="wheelchair_accessible"
+                  checked={formData.wheelchair_accessible}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      wheelchair_accessible: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
+                />
+                <label htmlFor="wheelchair_accessible" className="text-sm text-zinc-700">
+                  Wheelchair accessible
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="step_free_access"
+                  checked={formData.step_free_access}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      step_free_access: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
+                />
+                <label htmlFor="step_free_access" className="text-sm text-zinc-700">
+                  Step-free access
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="baby_changing"
+                  checked={formData.baby_changing}
+                  onChange={(e) =>
+                    setFormData({ ...formData, baby_changing: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
+                />
+                <label htmlFor="baby_changing" className="text-sm text-zinc-700">
+                  Baby changing table
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="gender_neutral"
+                  checked={formData.gender_neutral}
+                  onChange={(e) =>
+                    setFormData({ ...formData, gender_neutral: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
+                />
+                <label htmlFor="gender_neutral" className="text-sm text-zinc-700">
+                  Gender-neutral
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="family_friendly"
+                  checked={formData.family_friendly}
+                  onChange={(e) =>
+                    setFormData({ ...formData, family_friendly: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
+                />
+                <label htmlFor="family_friendly" className="text-sm text-zinc-700">
+                  Family-friendly
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Notes */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-700">
+              Additional notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              placeholder="Any other helpful information..."
+              className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-teal-700 px-6 py-3 font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-full bg-teal-700 px-6 py-3 font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Submitting..." : "Submit bathroom"}
+            {isSubmitting ? "Adding bathroom..." : "Add bathroom"}
           </button>
         </form>
       </div>

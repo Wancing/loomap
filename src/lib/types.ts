@@ -1,26 +1,49 @@
+export type BathroomStatus = "open" | "closed" | "uncertain" | "pending";
+export type BathroomAccess = "free" | "paid";
+
+export type BathroomPhoto = {
+  id: string;
+  src: string;
+  alt: string;
+  caption?: string;
+  uploadedAt: string;
+};
+
 export type Bathroom = {
   id: string;
   name: string;
   latitude: number;
   longitude: number;
-  address?: string | null;
-  place_description?: string | null;
-  free_or_paid: "free" | "paid" | "unknown";
-  price_if_known?: string | null;
-  opening_hours?: string | null;
+  address: string;
+  free_or_paid: BathroomAccess;
+  price_if_known?: string;
+  opening_hours?: string;
   wheelchair_accessible: boolean;
   step_free_access: boolean;
   baby_changing: boolean;
   gender_neutral: boolean;
-  family_friendly: boolean;
   requires_code: boolean;
-  code_hint?: string | null;
-  status: "open" | "closed" | "uncertain" | "under_review";
-  cleanliness_avg: number;
-  safety_avg: number;
-  accessibility_avg: number;
+  safety_rating: number;
+  cleanliness_rating: number;
+  accessibility_rating: number;
+  notes?: string;
+  photos: BathroomPhoto[];
+  status: BathroomStatus;
+  last_verified_at?: string;
+  created_by?: string;
   trust_score: number;
   number_of_confirmations: number;
   report_count: number;
-  last_verified_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ActivityItem = {
+  id: string;
+  type: "added" | "verified" | "edited" | "reported";
+  bathroomId: string;
+  bathroomName: string;
+  createdAt: string;
+  userName?: string;
+  confirmations?: number;
 };

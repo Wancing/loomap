@@ -351,6 +351,7 @@ export default function BathroomDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
+                onClick={() => router.push(`/bathroom/${bathroom.id}/report`)}
                 className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
               >
                 Report issue
