@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { TrustBadge } from "@/components/trust-badge";
 import SimpleMap from "@/components/map/simple-map";
@@ -75,6 +76,7 @@ export default function HomePage() {
   const [locationError, setLocationError] = useState("");
   const [bathrooms, setBathrooms] = useState<Bathroom[]>([]);
   const [isLoadingBathrooms, setIsLoadingBathrooms] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchBathrooms = async () => {
@@ -362,7 +364,11 @@ export default function HomePage() {
               </div>
             ) : filteredBathrooms.length > 0 ? (
               filteredBathrooms.map((bathroom) => (
-                <article key={bathroom.id} className="card-surface p-4">
+                <article
+                  key={bathroom.id}
+                  onClick={() => router.push(`/bathroom/${bathroom.id}`)}
+                  className="card-surface cursor-pointer p-4 transition hover:shadow-md"
+                >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -434,7 +440,11 @@ export default function HomePage() {
             </div>
           ) : filteredBathrooms.length > 0 ? (
             filteredBathrooms.map((bathroom) => (
-              <article key={bathroom.id} className="card-surface p-4">
+              <article
+                key={bathroom.id}
+                onClick={() => router.push(`/bathroom/${bathroom.id}`)}
+                className="card-surface cursor-pointer p-4 transition hover:shadow-md"
+              >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
