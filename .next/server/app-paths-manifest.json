@@ -1,7 +1,0 @@
-{
-  "/api/bathrooms/route": "app/api/bathrooms/route.js",
-  "/api/bathrooms/[id]/edit/route": "app/api/bathrooms/[id]/edit/route.js",
-  "/page": "app/page.js",
-  "/bathroom/[id]/page": "app/bathroom/[id]/page.js",
-  "/bathroom/[id]/edit/page": "app/bathroom/[id]/edit/page.js"
-}
