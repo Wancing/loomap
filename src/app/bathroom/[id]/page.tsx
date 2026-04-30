@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { TrustBadge } from "@/components/trust-badge";
+import { getStatusLabel, getStatusColor } from "@/components/bathroom-marker";
 import type { Bathroom } from "@/lib/types";
 
 export default function BathroomDetailPage() {
@@ -97,19 +98,26 @@ export default function BathroomDetailPage() {
       </header>
 
       <div className="card-surface overflow-hidden">
-        {/* Placeholder for photo - we'll add this later */}
         <div className="flex h-48 items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 text-sm text-teal-700">
           Photo coming soon
         </div>
 
         <div className="space-y-6 p-6">
-          {/* Title and status */}
           <div>
-            <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
-              <h1 className="text-2xl font-semibold">{bathroom.name}</h1>
+            <h1 className="mb-3 text-2xl font-semibold">{bathroom.name}</h1>
+            
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(bathroom.status)}`}>
+                {bathroom.status === "pending_review" && (
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {getStatusLabel(bathroom.status)}
+              </div>
 
               <span
-                className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   bathroom.free_or_paid === "free"
                     ? "bg-teal-100 text-teal-800"
                     : bathroom.free_or_paid === "paid"
@@ -134,13 +142,11 @@ export default function BathroomDetailPage() {
             )}
           </div>
 
-          {/* Trust badge */}
           <TrustBadge
             trustScore={bathroom.trust_score}
             confirmations={bathroom.number_of_confirmations}
           />
 
-          {/* Ratings */}
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl bg-zinc-50 p-4 text-center">
               <p className="mb-1 text-2xl font-bold text-teal-700">
@@ -164,7 +170,6 @@ export default function BathroomDetailPage() {
             </div>
           </div>
 
-          {/* Details grid */}
           <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <h2 className="font-semibold text-zinc-900">Details</h2>
 
@@ -178,22 +183,6 @@ export default function BathroomDetailPage() {
                 </div>
               )}
 
-              <div className="flex justify-between">
-                <span className="text-zinc-600">Status</span>
-                <span
-                  className={`font-medium ${
-                    bathroom.status === "open"
-                      ? "text-green-700"
-                      : bathroom.status === "closed"
-                      ? "text-red-700"
-                      : "text-zinc-600"
-                  }`}
-                >
-                  {bathroom.status.charAt(0).toUpperCase() +
-                    bathroom.status.slice(1)}
-                </span>
-              </div>
-
               {bathroom.requires_code && (
                 <div className="flex justify-between">
                   <span className="text-zinc-600">Access</span>
@@ -205,7 +194,6 @@ export default function BathroomDetailPage() {
             </div>
           </div>
 
-          {/* Accessibility features */}
           <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <h2 className="font-semibold text-zinc-900">
               Accessibility Features
@@ -263,7 +251,6 @@ export default function BathroomDetailPage() {
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="grid gap-3">
             <a
               href={directionsUrl}

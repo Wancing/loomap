@@ -16,10 +16,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/bathrooms/route.js"
     ],
-    "/add/page": [
+    "/bathroom/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/add/page.js"
+      "static/chunks/app/bathroom/[id]/page.js"
     ]
   }
 }

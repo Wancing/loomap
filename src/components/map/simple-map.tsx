@@ -1,5 +1,6 @@
 "use client";
 
+import { getMarkerIcon } from "../bathroom-marker";
 import { useEffect, useMemo, useState } from "react";
 import type { Bathroom } from "@/lib/types";
 
@@ -47,17 +48,6 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
   const L = require("leaflet");
 
   const defaultCenter: [number, number] = [38.7938, -9.1835];
-
-  const bathroomIcon = useMemo(
-    () =>
-      L.icon({
-        iconUrl: "/bathroom-icon.svg",
-        iconSize: [28, 28],
-        iconAnchor: [14, 28],
-        popupAnchor: [0, -24],
-      }),
-    [L]
-  );
 
   const userIcon = useMemo(
     () =>
@@ -133,16 +123,16 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
         <FitMapToData />
 
         <TileLayer
-  attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-  subdomains={["a", "b", "c", "d"]}
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains={["a", "b", "c", "d"]}
         />
 
         {bathrooms.map((bathroom) => (
           <Marker
             key={bathroom.id}
             position={[bathroom.latitude, bathroom.longitude]}
-            icon={bathroomIcon}
+            icon={getMarkerIcon(bathroom.status)}
           >
             <Popup>
               <div className="space-y-1 text-sm">

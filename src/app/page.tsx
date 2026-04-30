@@ -255,12 +255,12 @@ export default function HomePage() {
             {isLocating ? "Finding your location..." : "Use my location"}
           </button>
           <button
-  type="button"
-  onClick={() => router.push("/add")}
-  className="rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800"
->
-  + Add bathroom
-</button>
+            type="button"
+            onClick={() => router.push("/add")}
+            className="rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800"
+          >
+            + Add bathroom
+          </button>
         </div>
 
         <div className="space-y-2">
@@ -362,7 +362,31 @@ export default function HomePage() {
 
       {viewMode === "map" ? (
         <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <SimpleMap bathrooms={filteredBathrooms} userLocation={userLocation} />
+          <div className="relative">
+            <SimpleMap bathrooms={filteredBathrooms} userLocation={userLocation} />
+            
+            <div className="absolute bottom-4 left-4 z-[400] rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
+              <p className="mb-2 text-xs font-semibold text-zinc-700">Map Legend</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="h-3 w-3 rounded-full bg-emerald-600"></div>
+                  <span className="text-zinc-600">Verified</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="h-3 w-3 rounded-full bg-amber-500"></div>
+                  <span className="text-zinc-600">Pending review</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="h-3 w-3 rounded-full bg-slate-500"></div>
+                  <span className="text-zinc-600">Uncertain</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="h-3 w-3 rounded-full bg-rose-600"></div>
+                  <span className="text-zinc-600">Closed</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="space-y-4">
             {isLoadingBathrooms ? (
