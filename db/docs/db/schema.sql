@@ -16,7 +16,7 @@ create table if not exists bathrooms (
   family_friendly boolean default false,
   requires_code boolean default false,
   code_hint text,
-  status text check (status in ('open', 'closed', 'uncertain', 'under_review')) default 'uncertain',
+  status text check (status in ('open', 'closed', 'uncertain', 'pending_review', 'under_review')) default 'pending_review',
   cleanliness_avg numeric(3,2) default 0,
   safety_avg numeric(3,2) default 0,
   accessibility_avg numeric(3,2) default 0,

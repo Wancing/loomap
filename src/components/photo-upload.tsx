@@ -1,148 +1,158 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { BathroomPhoto } from "@/lib/types";
 
 type PhotoUploadProps = {
-  value: BathroomPhoto[];
-  onChange: (photos: BathroomPhoto[]) => void;
-  maxFiles?: number;
-  maxFileSizeMb?: number;
+  value?: string[];
+  onPhotosChange?: (photos: string[]) => void;
+  maxPhotos?: number;
 };
 
 export function PhotoUpload({
-  value,
-  onChange,
-  maxFiles = 5,
-  maxFileSizeMb = 4,
+  value = [],
+  onPhotosChange,
+  maxPhotos = 5,
 }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [error, setError] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const fileToDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const photos = Array.isArray(value) ? value : [];
 
-  const handleFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
+  const notifyChange = (nextPhotos: string[]) => {
+    onPhotosChange?.(nextPhotos);
+  };
 
-    setError("");
-    const selected = Array.from(files);
+  const handleFilesSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(event.target.files ?? []);
 
-    if (value.length + selected.length > maxFiles) {
-      setError(`You can upload up to ${maxFiles} photos.`);
+    if (files.length === 0) return;
+
+    const availableSlots = Math.max(0, maxPhotos - photos.length);
+    const selectedFiles = files.slice(0, availableSlots);
+
+    if (selectedFiles.length === 0) {
+      alert(`You can upload up to ${maxPhotos} photos.`);
+      event.target.value = "";
       return;
     }
 
-    const invalid = selected.find(
-      (file) =>
-        !file.type.startsWith("image/") || file.size > maxFileSizeMb * 1024 * 1024
-    );
+    setIsProcessing(true);
 
-    if (invalid) {
-      setError(
-        `Only image files up to ${maxFileSizeMb}MB are allowed.`
-      );
-      return;
+    try {
+      const nextPhotos = [...photos];
+
+      for (const file of selectedFiles) {
+        const dataUrl = await readFileAsDataURL(file);
+        nextPhotos.push(dataUrl);
+      }
+
+      notifyChange(nextPhotos);
+    } catch (error) {
+      console.error("Error reading photos:", error);
+      alert("Could not process one or more photos.");
+    } finally {
+      setIsProcessing(false);
+      event.target.value = "";
     }
-
-    const newPhotos = await Promise.all(
-      selected.map(async (file, index) => {
-        const src = await fileToDataUrl(file);
-        return {
-          id: crypto.randomUUID?.() ?? `${Date.now()}-${index}`,
-          src,
-          alt: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-          caption: "",
-          uploadedAt: new Date().toISOString(),
-        };
-      })
-    );
-
-    onChange([...value, ...newPhotos]);
-    if (inputRef.current) inputRef.current.value = "";
   };
 
-  const removePhoto = (id: string) => {
-    onChange(value.filter((photo) => photo.id !== id));
-  };
-
-  const updateCaption = (id: string, caption: string) => {
-    onChange(
-      value.map((photo) =>
-        photo.id === id ? { ...photo, caption, alt: caption || photo.alt } : photo
-      )
-    );
+  const handleRemovePhoto = (indexToRemove: number) => {
+    const nextPhotos = photos.filter((_, index) => index !== indexToRemove);
+    notifyChange(nextPhotos);
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label
-          htmlFor="photo-upload"
-          className="mb-2 block text-sm font-medium text-slate-900"
-        >
-          Photos
-        </label>
+    <section className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-900">Photos</h2>
+          <p className="text-sm text-zinc-600">
+            Add up to {maxPhotos} photos to help people recognize the location.
+          </p>
+        </div>
+
+        <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+          {photos.length}/{maxPhotos}
+        </span>
+      </div>
+
+      <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4">
         <input
           ref={inputRef}
-          id="photo-upload"
           type="file"
           accept="image/*"
           multiple
-          onChange={(e) => void handleFiles(e.target.files)}
-          className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-teal-800"
-          aria-describedby="photo-upload-help"
+          onChange={handleFilesSelected}
+          className="hidden"
         />
-        <p id="photo-upload-help" className="mt-2 text-xs text-slate-500">
-          Upload up to {maxFiles} photos. JPG, PNG, or WebP. Max {maxFileSizeMb}MB each.
-        </p>
-        {error ? (
-          <p className="mt-2 text-sm text-rose-700" role="alert">
-            {error}
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={isProcessing || photos.length >= maxPhotos}
+            className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isProcessing
+              ? "Processing photos..."
+              : photos.length >= maxPhotos
+              ? "Photo limit reached"
+              : "Choose photos"}
+          </button>
+
+          <p className="text-xs text-zinc-500">
+            Photos stay in the browser for now so the form does not crash while we stabilize uploads.
           </p>
-        ) : null}
+        </div>
       </div>
 
-      {value.length > 0 ? (
+      {photos.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3" role="list">
-          {value.map((photo) => (
+          {photos.map((photo, index) => (
             <li
-              key={photo.id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+              key={`${photo}-${index}`}
+              className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
             >
-              <img
-                src={photo.src}
-                alt={photo.alt || "Bathroom photo preview"}
-                className="h-32 w-full object-cover"
-              />
-              <div className="space-y-2 p-3">
-                <label className="block text-xs font-medium text-slate-700">
-                  Caption
-                  <input
-                    type="text"
-                    value={photo.caption ?? ""}
-                    onChange={(e) => updateCaption(photo.id, e.target.value)}
-                    placeholder="Optional note"
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
-                  />
-                </label>
+              <div className="aspect-square bg-zinc-100">
+                <img
+                  src={photo}
+                  alt={`Uploaded bathroom photo ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              <div className="p-2">
                 <button
                   type="button"
-                  onClick={() => removePhoto(photo.id)}
-                  className="w-full rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50"
+                  onClick={() => handleRemovePhoto(index)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
                 >
-                  Remove photo
+                  Remove
                 </button>
               </div>
             </li>
           ))}
         </ul>
       ) : null}
-    </div>
+    </section>
   );
+}
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to read file"));
+      }
+    };
+
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }

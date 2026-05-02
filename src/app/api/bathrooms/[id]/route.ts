@@ -10,10 +10,7 @@ export async function GET(
     const bathroom = getBathroomById(id);
 
     if (!bathroom) {
-      return NextResponse.json(
-        { error: "Bathroom not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Bathroom not found" }, { status: 404 });
     }
 
     return NextResponse.json(bathroom);

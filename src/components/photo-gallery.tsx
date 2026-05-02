@@ -35,6 +35,7 @@ export function PhotoGallery({ photos, bathroomName }: PhotoGalleryProps) {
   if (!photos.length) return null;
 
   const activePhoto = activeIndex !== null ? photos[activeIndex] : null;
+  const currentIndex = activeIndex ?? 0;
 
   return (
     <>
@@ -94,7 +95,7 @@ export function PhotoGallery({ photos, bathroomName }: PhotoGalleryProps) {
               <button
                 type="button"
                 onClick={() =>
-                  setActiveIndex((activeIndex - 1 + photos.length) % photos.length)
+                  setActiveIndex((currentIndex - 1 + photos.length) % photos.length)
                 }
                 className="absolute left-4 rounded-full bg-white/10 px-3 py-2 text-white hover:bg-white/20"
                 aria-label="Previous photo"
@@ -103,7 +104,7 @@ export function PhotoGallery({ photos, bathroomName }: PhotoGalleryProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveIndex((activeIndex + 1) % photos.length)}
+                onClick={() => setActiveIndex((currentIndex + 1) % photos.length)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 px-3 py-2 text-white hover:bg-white/20"
                 aria-label="Next photo"
               >
@@ -120,7 +121,7 @@ export function PhotoGallery({ photos, bathroomName }: PhotoGalleryProps) {
             />
             {(activePhoto.caption || photos.length > 1) && (
               <figcaption className="text-center text-sm text-slate-200">
-                {activePhoto.caption || `${activeIndex + 1} of ${photos.length}`}
+                {activePhoto.caption || `${currentIndex + 1} of ${photos.length}`}
               </figcaption>
             )}
           </figure>

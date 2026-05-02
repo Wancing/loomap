@@ -1,25 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import { Logo } from "@/components/logo";
 import { PhotoUpload } from "@/components/photo-upload";
-
-const MapWithNoSSR = dynamic(() => import("@/components/location-picker-map"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-64 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50">
-      <p className="text-sm text-zinc-500">Loading map...</p>
-    </div>
-  ),
-});
 
 export default function AddBathroomPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     place_description: "",
@@ -40,29 +30,19 @@ export default function AddBathroomPage() {
   });
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData((prev) => ({
-            ...prev,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          }));
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-        }
-      );
-    }
-  }, []);
+    if (!navigator.geolocation) return;
 
-  const handleLocationSelect = (lat: number, lng: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-    }));
-  };
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+      },
+      () => {}
+    );
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,8 +78,8 @@ export default function AddBathroomPage() {
     <main className="container-shell space-y-6">
       <header className="flex items-center justify-between rounded-[28px] border border-zinc-200 bg-white/80 p-4 shadow-sm">
         <Logo />
-
         <button
+          type="button"
           onClick={() => router.push("/")}
           className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
         >
@@ -108,17 +88,16 @@ export default function AddBathroomPage() {
       </header>
 
       <div className="card-surface overflow-hidden">
-        <div className="border-b border-zinc-200 bg-gradient-to-r from-teal-50 to-blue-50 p-6">
+        <div className="border-b border-zinc-200 bg-white p-6">
           <h1 className="text-2xl font-semibold text-zinc-900">Add a Bathroom</h1>
           <p className="mt-1 text-sm text-zinc-600">
-            Help the community by adding a public bathroom
+            Help the community by adding a public bathroom.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 p-6">
-          {/* Basic Info */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-900">Basic Information</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Basic information</h2>
 
             <div>
               <label className="block text-sm font-medium text-zinc-700">
@@ -129,7 +108,7 @@ export default function AddBathroomPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Starbucks Restroom, City Hall Bathroom"
+                placeholder="e.g. City Hall restroom"
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
@@ -141,8 +120,10 @@ export default function AddBathroomPage() {
               <input
                 type="text"
                 value={formData.place_description}
-                onChange={(e) => setFormData({ ...formData, place_description: e.target.value })}
-                placeholder="e.g., Inside shopping center, 2nd floor"
+                onChange={(e) =>
+                  setFormData({ ...formData, place_description: e.target.value })
+                }
+                placeholder="Inside shopping center, 2nd floor"
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
@@ -153,35 +134,59 @@ export default function AddBathroomPage() {
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Street address or nearby landmark"
+                placeholder="Street address or landmark"
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
 
-          {/* Location Picker */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-zinc-700">
-              Location <span className="text-red-600">*</span>
-            </label>
-            <p className="text-xs text-zinc-500">
-              Tap on the map to set the exact location
+          <div className="space-y-3 rounded-2xl bg-zinc-50 p-4">
+            <h2 className="text-lg font-semibold text-zinc-900">Location</h2>
+            <p className="text-sm text-zinc-600">
+              For now, edit the coordinates directly. We’ll restore the picker after the app is stable.
             </p>
-            <MapWithNoSSR
-              center={[formData.latitude, formData.longitude]}
-              onLocationSelect={handleLocationSelect}
-            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">
+                  Latitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={formData.latitude}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      latitude: Number(e.target.value),
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">
+                  Longitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={formData.longitude}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      longitude: Number(e.target.value),
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Photos */}
-          <div className="space-y-2">
-            <PhotoUpload
-              onPhotosChange={setPhotos}
-              maxPhotos={5}
-            />
-          </div>
+          <PhotoUpload onPhotosChange={setPhotos} maxPhotos={5} />
 
-          {/* Pricing */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-zinc-900">Pricing</h2>
 
@@ -205,7 +210,7 @@ export default function AddBathroomPage() {
               </select>
             </div>
 
-            {formData.free_or_paid === "paid" && (
+            {formData.free_or_paid === "paid" ? (
               <div>
                 <label className="block text-sm font-medium text-zinc-700">
                   Price (if known)
@@ -216,16 +221,15 @@ export default function AddBathroomPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, price_if_known: e.target.value })
                   }
-                  placeholder="e.g., €0.50, $1.00"
+                  placeholder="€0.50"
                   className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* Hours & Access */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-900">Hours & Access</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Hours & access</h2>
 
             <div>
               <label className="block text-sm font-medium text-zinc-700">
@@ -237,7 +241,7 @@ export default function AddBathroomPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, opening_hours: e.target.value })
                 }
-                placeholder="e.g., 24/7, Mon-Fri 9am-6pm"
+                placeholder="24/7 or Mon-Fri 9am-6pm"
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
@@ -257,7 +261,7 @@ export default function AddBathroomPage() {
               </label>
             </div>
 
-            {formData.requires_code && (
+            {formData.requires_code ? (
               <div>
                 <label className="block text-sm font-medium text-zinc-700">
                   Code hint
@@ -268,104 +272,47 @@ export default function AddBathroomPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, code_hint: e.target.value })
                   }
-                  placeholder="e.g., Ask staff, Written on receipt"
+                  placeholder="Ask staff or receipt code"
                   className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* Accessibility Features */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-zinc-900">
-              Accessibility Features
+              Accessibility features
             </h2>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="wheelchair_accessible"
-                  checked={formData.wheelchair_accessible}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      wheelchair_accessible: e.target.checked,
-                    })
-                  }
-                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
-                />
-                <label htmlFor="wheelchair_accessible" className="text-sm text-zinc-700">
-                  Wheelchair accessible
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="step_free_access"
-                  checked={formData.step_free_access}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      step_free_access: e.target.checked,
-                    })
-                  }
-                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
-                />
-                <label htmlFor="step_free_access" className="text-sm text-zinc-700">
-                  Step-free access
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="baby_changing"
-                  checked={formData.baby_changing}
-                  onChange={(e) =>
-                    setFormData({ ...formData, baby_changing: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
-                />
-                <label htmlFor="baby_changing" className="text-sm text-zinc-700">
-                  Baby changing table
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="gender_neutral"
-                  checked={formData.gender_neutral}
-                  onChange={(e) =>
-                    setFormData({ ...formData, gender_neutral: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
-                />
-                <label htmlFor="gender_neutral" className="text-sm text-zinc-700">
-                  Gender-neutral
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="family_friendly"
-                  checked={formData.family_friendly}
-                  onChange={(e) =>
-                    setFormData({ ...formData, family_friendly: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
-                />
-                <label htmlFor="family_friendly" className="text-sm text-zinc-700">
-                  Family-friendly
-                </label>
-              </div>
+              {[
+                ["wheelchair_accessible", "Wheelchair accessible"],
+                ["step_free_access", "Step-free access"],
+                ["baby_changing", "Baby changing table"],
+                ["gender_neutral", "Gender-neutral"],
+                ["family_friendly", "Family-friendly"],
+              ].map(([key, label]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={key}
+                    checked={formData[key as keyof typeof formData] as boolean}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        [key]: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-2 focus:ring-teal-500"
+                  />
+                  <label htmlFor={key} className="text-sm text-zinc-700">
+                    {label}
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Additional Notes */}
           <div>
             <label className="block text-sm font-medium text-zinc-700">
               Additional notes
@@ -374,12 +321,11 @@ export default function AddBathroomPage() {
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              placeholder="Any other helpful information..."
+              placeholder="Any extra directions or tips..."
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting}
