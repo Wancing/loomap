@@ -1,8 +1,9 @@
 "use client";
 
-import { getMarkerIcon } from "../bathroom-marker";
 import { useEffect, useMemo, useState } from "react";
 import type { Bathroom } from "@/lib/types";
+import { getMarkerIcon } from "../bathroom-marker";
+import "leaflet/dist/leaflet.css";
 
 type UserLocation = {
   latitude: number;
@@ -29,11 +30,11 @@ export default function SimpleMap({
       <div className="card-surface min-h-[420px] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Map view</h2>
-          <span className="text-xs text-zinc-500">Loading map…</span>
+          <span className="text-xs text-zinc-500">Loading map...</span>
         </div>
 
         <div className="flex h-[340px] items-center justify-center rounded-[20px] bg-zinc-50 text-center text-sm text-zinc-500">
-          Preparing map…
+          Preparing map...
         </div>
       </div>
     );
@@ -47,7 +48,7 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
     require("react-leaflet");
   const L = require("leaflet");
 
-  const defaultCenter: [number, number] = [38.7938, -9.1835];
+  const defaultCenter: [number, number] = [38.7223, -9.1393];
 
   const userIcon = useMemo(
     () =>
@@ -83,7 +84,7 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
       }
 
       if (points.length === 0) {
-        map.setView(defaultCenter, 14);
+        map.setView(defaultCenter, 13);
         return;
       }
 
@@ -93,6 +94,7 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
       }
 
       const bounds = L.latLngBounds(points);
+
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [32, 32] });
       }
@@ -123,7 +125,7 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
         <FitMapToData />
 
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           subdomains={["a", "b", "c", "d"]}
         />
@@ -137,8 +139,10 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
             <Popup>
               <div className="space-y-1 text-sm">
                 <strong>{bathroom.name}</strong>
-                {bathroom.place_description && <p>{bathroom.place_description}</p>}
-                {bathroom.address && <p>{bathroom.address}</p>}
+                {bathroom.place_description ? (
+                  <p>{bathroom.place_description}</p>
+                ) : null}
+                {bathroom.address ? <p>{bathroom.address}</p> : null}
                 <p>Status: {bathroom.status}</p>
                 <p>Type: {bathroom.free_or_paid}</p>
               </div>
@@ -146,7 +150,7 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
           </Marker>
         ))}
 
-        {userLocation && (
+        {userLocation ? (
           <>
             <Marker
               position={[userLocation.latitude, userLocation.longitude]}
@@ -167,7 +171,7 @@ function LeafletMap({ bathrooms, userLocation }: SimpleMapProps) {
               }}
             />
           </>
-        )}
+        ) : null}
       </MapContainer>
     </div>
   );

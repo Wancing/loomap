@@ -1,13 +1,10 @@
-export type BathroomStatus = "open" | "closed" | "uncertain" | "pending_review";
-export type FreeOrPaid = "free" | "paid" | "unknown";
+export type BathroomStatus =
+  | "open"
+  | "closed"
+  | "uncertain"
+  | "pending_review";
 
-export type BathroomPhoto = {
-  id: string;
-  src: string;
-  alt: string;
-  caption?: string;
-  uploadedAt: string;
-};
+export type BathroomAccess = "free" | "paid" | "unknown";
 
 export type Bathroom = {
   id: string;
@@ -16,7 +13,7 @@ export type Bathroom = {
   longitude: number;
   address?: string;
   place_description?: string;
-  free_or_paid: FreeOrPaid;
+  free_or_paid: BathroomAccess;
   price_if_known?: string;
   opening_hours?: string;
   wheelchair_accessible: boolean;
@@ -26,6 +23,7 @@ export type Bathroom = {
   family_friendly: boolean;
   requires_code: boolean;
   code_hint?: string;
+  notes?: string;
   status: BathroomStatus;
   cleanliness_avg: number;
   safety_avg: number;
@@ -33,17 +31,7 @@ export type Bathroom = {
   trust_score: number;
   number_of_confirmations: number;
   report_count: number;
-  last_verified_at?: string;
-  created_at: string;
-  photos: BathroomPhoto[];
-};
-
-export type ActivityItem = {
-  id: string;
-  type: "added" | "verified" | "edited" | "reported";
-  bathroomId: string;
-  bathroomName: string;
-  createdAt: string;
-  userName?: string;
-  confirmations?: number;
+  last_verified_at?: string | null;
+  created_at?: string | null;
+  source?: string;
 };

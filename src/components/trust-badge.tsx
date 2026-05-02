@@ -4,7 +4,7 @@ import { ShieldCheck, AlertTriangle, HelpCircle, Sparkles } from "lucide-react";
 type TrustState = "community_verified" | "likely_accurate" | "data_uncertain" | "new_location";
 
 type TrustBadgeProps = {
-  state: TrustState;
+  trustScore: number;
   confirmations?: number;
   reports?: number;
   lastVerifiedAt?: string | null; // ISO string from API
@@ -21,12 +21,24 @@ function formatLastVerified(dateString?: string | null) {
 }
 
 export const TrustBadge: React.FC<TrustBadgeProps> = ({
-  state,
+  trustScore,
   confirmations,
   reports,
   lastVerifiedAt,
   className = "",
 }) => {
+  // Determine state based on trustScore
+  let state: TrustState;
+  if (trustScore >= 80) {
+    state = "community_verified";
+  } else if (trustScore >= 50) {
+    state = "likely_accurate";
+  } else if (trustScore >= 20) {
+    state = "data_uncertain";
+  } else {
+    state = "new_location";
+  }
+
   let label = "";
   let description = "";
   let Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> = ShieldCheck;

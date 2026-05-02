@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { TrustBadge } from "@/components/trust-badge";
 import SimpleMap from "@/components/map/simple-map";
-import { Bathroom } from "@/lib/types";
+import type { Bathroom } from "@/lib/types";
 
 const FILTERS = [
   "Wheelchair",
@@ -51,19 +51,12 @@ function getDistanceKm(
       Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
   return earthRadiusKm * c;
 }
 
 function formatDistance(distanceKm: number | null) {
-  if (distanceKm === null) {
-    return "Distance unavailable";
-  }
-
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)} m away`;
-  }
-
+  if (distanceKm === null) return "Distance unavailable";
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m away`;
   return `${distanceKm.toFixed(1)} km away`;
 }
 
@@ -81,34 +74,26 @@ export default function HomePage() {
   useEffect(() => {
     const fetchBathrooms = async () => {
       setIsLoadingBathrooms(true);
-      
-      try {
-        const params = new URLSearchParams();
-        
-        if (userLocation) {
-          params.set("lat", userLocation.latitude.toString());
-          params.set("lon", userLocation.longitude.toString());
-          params.set("radius", "5000");
-        }
 
-        const response = await fetch(`/api/bathrooms?${params.toString()}`);
-        
+      try {
+        const response = await fetch("/api/bathrooms");
+
         if (!response.ok) {
-          console.error("Failed to fetch bathrooms");
-          return;
+          throw new Error(`Failed to fetch bathrooms: ${response.status}`);
         }
 
         const data = await response.json();
         setBathrooms(data.bathrooms || []);
       } catch (error) {
         console.error("Error fetching bathrooms:", error);
+        setBathrooms([]);
       } finally {
         setIsLoadingBathrooms(false);
       }
     };
 
     fetchBathrooms();
-  }, [userLocation]);
+  }, []);
 
   const toggleFilter = (filter: FilterLabel) => {
     setActiveFilters((current) =>
@@ -157,7 +142,7 @@ export default function HomePage() {
   const filteredBathrooms = useMemo<BathroomWithDistance[]>(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    const results = bathrooms
+    return bathrooms
       .filter((bathroom) => {
         if (
           activeFilters.includes("Wheelchair") &&
@@ -226,18 +211,11 @@ export default function HomePage() {
           return b.trust_score - a.trust_score;
         }
 
-        if (a.distanceKm === null) {
-          return 1;
-        }
-
-        if (b.distanceKm === null) {
-          return -1;
-        }
+        if (a.distanceKm === null) return 1;
+        if (b.distanceKm === null) return -1;
 
         return a.distanceKm - b.distanceKm;
       });
-
-    return results;
   }, [activeFilters, searchQuery, userLocation, bathrooms]);
 
   return (
@@ -246,70 +224,27 @@ export default function HomePage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Logo />
 
-          <button
-            type="button"
-            onClick={handleUseMyLocation}
-            disabled={isLocating}
-            className="rounded-full border border-teal-700 bg-white px-4 py-2 text-sm font-medium text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLocating ? "Finding your location..." : "Use my location"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/add")}
-            className="rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800"
-          >
-            + Add bathroom
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Find a bathroom fast
-          </h1>
-          <p className="max-w-xl text-sm text-zinc-600">
-            Loomap helps people find trustworthy public bathrooms nearby, with
-            accessibility and community trust signals built in.
-          </p>
-
-          {userLocation && (
-            <p className="text-sm text-teal-700">
-              Using your current location to sort nearby bathrooms.
-            </p>
-          )}
-
-          {locationError && (
-            <p className="text-sm text-rose-600">{locationError}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
-              onClick={() => setViewMode("map")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                viewMode === "map"
-                  ? "bg-teal-700 text-white"
-                  : "border border-zinc-300 bg-white text-zinc-700"
-              }`}
+              onClick={handleUseMyLocation}
+              disabled={isLocating}
+              className="rounded-full border border-teal-700 bg-white px-4 py-2 text-sm font-medium text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Map view
+              {isLocating ? "Finding your location..." : "Use my location"}
             </button>
 
             <button
               type="button"
-              onClick={() => setViewMode("list")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                viewMode === "list"
-                  ? "bg-teal-700 text-white"
-                  : "border border-zinc-300 bg-white text-zinc-700"
-              }`}
+              onClick={() => router.push("/add")}
+              className="rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800"
             >
-              List view
+              Add bathroom
             </button>
           </div>
+        </div>
 
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="flex-1">
             <label htmlFor="bathroom-search" className="sr-only">
               Search bathrooms
@@ -323,240 +258,177 @@ export default function HomePage() {
               className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-teal-700"
             />
           </div>
+
+          <div className="flex rounded-full bg-zinc-100 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("map")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                viewMode === "map"
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-600"
+              }`}
+            >
+              Map
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                viewMode === "list"
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-600"
+              }`}
+            >
+              List
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-          {FILTERS.map((item) => {
-            const isActive = activeFilters.includes(item);
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((filter) => {
+            const isActive = activeFilters.includes(filter);
 
             return (
               <button
-                key={item}
+                key={filter}
                 type="button"
-                onClick={() => toggleFilter(item)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                onClick={() => toggleFilter(filter)}
+                className={`rounded-full px-3 py-2 text-xs font-medium transition ${
                   isActive
-                    ? "border border-teal-700 bg-teal-700 text-white"
-                    : "border border-zinc-300 bg-white text-zinc-700"
+                    ? "bg-teal-700 text-white"
+                    : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
-                {item}
+                {filter}
               </button>
             );
           })}
-
-          {(activeFilters.length > 0 || searchQuery.trim().length > 0) && (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveFilters([]);
-                setSearchQuery("");
-              }}
-              className="rounded-full border border-zinc-300 bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700"
-            >
-              Clear all
-            </button>
-          )}
         </div>
+
+        {locationError ? (
+          <p className="text-sm text-rose-600">{locationError}</p>
+        ) : null}
       </header>
 
+      <section className="flex items-center justify-between px-1">
+        <div>
+          <p className="text-sm font-medium text-zinc-900">
+            {isLoadingBathrooms
+              ? "Loading bathrooms..."
+              : `${filteredBathrooms.length} bathrooms found`}
+          </p>
+          <p className="text-xs text-zinc-500">
+            Fast nearby results with accessibility-first filters
+          </p>
+        </div>
+      </section>
+
       {viewMode === "map" ? (
-        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="relative">
-            <SimpleMap bathrooms={filteredBathrooms} userLocation={userLocation} />
-            
-            <div className="absolute bottom-4 left-4 z-[400] rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
-              <p className="mb-2 text-xs font-semibold text-zinc-700">Map Legend</p>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-3 w-3 rounded-full bg-emerald-600"></div>
-                  <span className="text-zinc-600">Verified</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-3 w-3 rounded-full bg-amber-500"></div>
-                  <span className="text-zinc-600">Pending review</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-3 w-3 rounded-full bg-slate-500"></div>
-                  <span className="text-zinc-600">Uncertain</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-3 w-3 rounded-full bg-rose-600"></div>
-                  <span className="text-zinc-600">Closed</span>
-                </div>
-              </div>
+        <section className="space-y-4">
+          <SimpleMap
+            bathrooms={filteredBathrooms}
+            userLocation={userLocation}
+          />
+
+          <div className="rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-zinc-900">Map legend</h2>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-700">
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                Open
+              </span>
+              <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+                Closed
+              </span>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+                Uncertain
+              </span>
+              <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-700">
+                Pending review
+              </span>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            {isLoadingBathrooms ? (
-              <div className="card-surface p-6 text-sm text-zinc-600">
-                Loading nearby bathrooms...
-              </div>
-            ) : filteredBathrooms.length > 0 ? (
-              filteredBathrooms.map((bathroom) => (
-                <article
-                  key={bathroom.id}
-                  onClick={() => router.push(`/bathroom/${bathroom.id}`)}
-                  className="card-surface cursor-pointer p-4 transition hover:shadow-md"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold">
-                            {bathroom.name}
-                          </h3>
-                          <span className="text-xs text-zinc-500">
-                            {formatDistance(bathroom.distanceKm)}
-                          </span>
-                        </div>
-
-                        <p className="text-sm text-zinc-600">
-                          {bathroom.place_description}
-                        </p>
-
-                        {bathroom.address && (
-                          <p className="mt-1 text-xs text-zinc-500">
-                            {bathroom.address}
-                          </p>
-                        )}
-                      </div>
-
-                      <span className="rounded-full bg-teal-700 px-2.5 py-1 text-xs font-semibold text-white">
-                        {bathroom.free_or_paid}
-                      </span>
-                    </div>
-
-                    <TrustBadge
-                      trustScore={bathroom.trust_score}
-                      confirmations={bathroom.number_of_confirmations}
-                    />
-
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div className="rounded-2xl bg-zinc-50 p-3">
-                        <p className="text-xs text-zinc-500">Cleanliness</p>
-                        <p className="font-semibold">
-                          {bathroom.cleanliness_avg}
-                        </p>
-                      </div>
-
-                      <div className="rounded-2xl bg-zinc-50 p-3">
-                        <p className="text-xs text-zinc-500">Safety</p>
-                        <p className="font-semibold">{bathroom.safety_avg}</p>
-                      </div>
-
-                      <div className="rounded-2xl bg-zinc-50 p-3">
-                        <p className="text-xs text-zinc-500">Access</p>
-                        <p className="font-semibold">
-                          {bathroom.accessibility_avg}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="card-surface p-6 text-sm text-zinc-600">
-                No bathrooms match your current search or filters.
-              </div>
-            )}
           </div>
         </section>
       ) : (
         <section className="space-y-4">
-          {isLoadingBathrooms ? (
-            <div className="card-surface p-6 text-sm text-zinc-600">
-              Loading nearby bathrooms...
+          {filteredBathrooms.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-zinc-300 bg-white p-6 text-center shadow-sm">
+              <h2 className="text-lg font-semibold text-zinc-900">
+                No bathrooms match these filters
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                Try clearing a filter or changing your search.
+              </p>
             </div>
-          ) : filteredBathrooms.length > 0 ? (
+          ) : (
             filteredBathrooms.map((bathroom) => (
               <article
                 key={bathroom.id}
-                onClick={() => router.push(`/bathroom/${bathroom.id}`)}
-                className="card-surface cursor-pointer p-4 transition hover:shadow-md"
+                className="rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm"
               >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold">
-                          {bathroom.name}
-                        </h3>
-                        <span className="text-xs text-zinc-500">
-                          {formatDistance(bathroom.distanceKm)}
-                        </span>
-                      </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-semibold text-zinc-900">
+                      {bathroom.name}
+                    </h2>
 
-                      <p className="text-sm text-zinc-600">
+                    {bathroom.place_description ? (
+                      <p className="text-sm text-zinc-700">
                         {bathroom.place_description}
                       </p>
+                    ) : null}
 
-                      {bathroom.address && (
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {bathroom.address}
-                        </p>
-                      )}
-                    </div>
-
-                    <span className="rounded-full bg-teal-700 px-2.5 py-1 text-xs font-semibold text-white">
-                      {bathroom.free_or_paid}
-                    </span>
+                    {bathroom.address ? (
+                      <p className="text-sm text-zinc-500">
+                        {bathroom.address}
+                      </p>
+                    ) : null}
                   </div>
 
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/bathroom/${bathroom.id}`)}
+                    className="rounded-full border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
+                  >
+                    View
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-700">
+                  <span className="rounded-full bg-zinc-100 px-3 py-1">
+                    {formatDistance(bathroom.distanceKm)}
+                  </span>
+                  <span className="rounded-full bg-zinc-100 px-3 py-1">
+                    {bathroom.free_or_paid}
+                  </span>
+                  <span className="rounded-full bg-zinc-100 px-3 py-1">
+                    {bathroom.status}
+                  </span>
+                  {bathroom.wheelchair_accessible ? (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1">
+                      Wheelchair
+                    </span>
+                  ) : null}
+                  {bathroom.baby_changing ? (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1">
+                      Baby changing
+                    </span>
+                  ) : null}
+                  {bathroom.gender_neutral ? (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1">
+                      Gender-neutral
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-4">
                   <TrustBadge
                     trustScore={bathroom.trust_score}
                     confirmations={bathroom.number_of_confirmations}
                   />
-
-                  <div className="flex flex-wrap gap-2 text-xs text-zinc-600">
-                    {bathroom.wheelchair_accessible && (
-                      <span className="rounded-full bg-zinc-100 px-3 py-1">
-                        Wheelchair
-                      </span>
-                    )}
-                    {bathroom.baby_changing && (
-                      <span className="rounded-full bg-zinc-100 px-3 py-1">
-                        Baby changing
-                      </span>
-                    )}
-                    {bathroom.gender_neutral && (
-                      <span className="rounded-full bg-zinc-100 px-3 py-1">
-                        Gender-neutral
-                      </span>
-                    )}
-                    {bathroom.family_friendly && (
-                      <span className="rounded-full bg-zinc-100 px-3 py-1">
-                        Family-friendly
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div className="rounded-2xl bg-zinc-50 p-3">
-                      <p className="text-xs text-zinc-500">Cleanliness</p>
-                      <p className="font-semibold">{bathroom.cleanliness_avg}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-zinc-50 p-3">
-                      <p className="text-xs text-zinc-500">Safety</p>
-                      <p className="font-semibold">{bathroom.safety_avg}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-zinc-50 p-3">
-                      <p className="text-xs text-zinc-500">Access</p>
-                      <p className="font-semibold">
-                        {bathroom.accessibility_avg}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </article>
             ))
-          ) : (
-            <div className="card-surface p-6 text-sm text-zinc-600">
-              No bathrooms match your current search or filters.
-            </div>
           )}
         </section>
       )}
