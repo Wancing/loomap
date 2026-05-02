@@ -8,8 +8,8 @@ export function getMarkerIcon(status: BathroomStatus) {
   const L = require("leaflet");
 
   const colors = {
-    open: "#059669",
-    pending_review: "#f59e0b",
+    open: "#0f9f78",
+    pending_review: "#d97706",
     uncertain: "#64748b",
     closed: "#dc2626",
   };
@@ -17,18 +17,24 @@ export function getMarkerIcon(status: BathroomStatus) {
   const color = colors[status] || colors.uncertain;
 
   const svgIcon = `
-    <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 26 16 26s16-14 16-26C32 7.163 24.837 0 16 0z" fill="${color}"/>
-      ircle cx="16" cy="16" r="6" fill="white"/>
+    <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        d="M13 1.5C6.649 1.5 1.5 6.649 1.5 13c0 8.783 11.5 19.5 11.5 19.5S24.5 21.783 24.5 13C24.5 6.649 19.351 1.5 13 1.5Z"
+        fill="${color}"
+        stroke="white"
+        stroke-width="2.5"
+        stroke-linejoin="round"
+      />
+      <circle cx="13" cy="13" r="3.25" fill="white" />
     </svg>
   `;
 
   return L.divIcon({
     html: svgIcon,
     className: "custom-marker",
-    iconSize: [32, 42],
-    iconAnchor: [16, 42],
-    popupAnchor: [0, -42],
+    iconSize: [26, 34],
+    iconAnchor: [13, 34],
+    popupAnchor: [0, -30],
   });
 }
 

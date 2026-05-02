@@ -12,8 +12,6 @@ export default function BathroomDetailPage() {
   const router = useRouter();
   const [bathroom, setBathroom] = useState<Bathroom | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationMessage, setVerificationMessage] = useState("");
 
   useEffect(() => {
     const fetchBathroom = async () => {
@@ -41,47 +39,6 @@ export default function BathroomDetailPage() {
       fetchBathroom();
     }
   }, [params.id]);
-
-  const handleVerify = async () => {
-    if (!bathroom) return;
-
-    setIsVerifying(true);
-    setVerificationMessage("");
-
-    try {
-      const response = await fetch(`/api/bathrooms/${bathroom.id}/verify`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to verify bathroom");
-      }
-
-      const result = await response.json();
-
-      setBathroom((current) =>
-        current
-          ? {
-              ...current,
-              number_of_confirmations:
-                result.confirmations ?? current.number_of_confirmations,
-              trust_score: result.trustScore ?? current.trust_score,
-              status: result.status ?? current.status,
-              last_verified_at: new Date().toISOString(),
-            }
-          : current
-      );
-
-      setVerificationMessage(
-        result.message || "Thanks for confirming this bathroom."
-      );
-    } catch (error) {
-      console.error("Error verifying bathroom:", error);
-      setVerificationMessage("Could not verify this bathroom right now.");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -149,15 +106,20 @@ export default function BathroomDetailPage() {
             >
               {getStatusLabel(bathroom.status)}
             </span>
+            {bathroom.source ? (
+              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-600">
+                {bathroom.source}
+              </span>
+            ) : null}
           </div>
 
-          {bathroom.place_description && (
+          {bathroom.place_description ? (
             <p className="text-sm text-zinc-700">{bathroom.place_description}</p>
-          )}
+          ) : null}
 
-          {bathroom.address && (
+          {bathroom.address ? (
             <p className="text-sm text-zinc-500">{bathroom.address}</p>
-          )}
+          ) : null}
         </div>
 
         <TrustBadge
@@ -194,26 +156,26 @@ export default function BathroomDetailPage() {
               <span className="font-medium">Type:</span> {bathroom.free_or_paid}
             </p>
 
-            {bathroom.price_if_known && (
+            {bathroom.price_if_known ? (
               <p>
                 <span className="font-medium">Price:</span>{" "}
                 {bathroom.price_if_known}
               </p>
-            )}
+            ) : null}
 
-            {bathroom.opening_hours && (
+            {bathroom.opening_hours ? (
               <p>
                 <span className="font-medium">Opening hours:</span>{" "}
                 {bathroom.opening_hours}
               </p>
-            )}
+            ) : null}
 
-            {bathroom.last_verified_at && (
+            {bathroom.last_verified_at ? (
               <p>
                 <span className="font-medium">Last verified:</span>{" "}
                 {new Date(bathroom.last_verified_at).toLocaleDateString()}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -221,46 +183,47 @@ export default function BathroomDetailPage() {
           <h2 className="text-sm font-semibold text-zinc-900">Accessibility</h2>
 
           <div className="flex flex-wrap gap-2 text-xs text-zinc-700">
-            {bathroom.wheelchair_accessible && (
+            {bathroom.wheelchair_accessible ? (
               <span className="rounded-full bg-white px-3 py-1">
                 Wheelchair accessible
               </span>
-            )}
-            {bathroom.step_free_access && (
+            ) : null}
+            {bathroom.step_free_access ? (
               <span className="rounded-full bg-white px-3 py-1">
                 Step-free access
               </span>
-            )}
-            {bathroom.baby_changing && (
+            ) : null}
+            {bathroom.baby_changing ? (
               <span className="rounded-full bg-white px-3 py-1">
                 Baby changing
               </span>
-            )}
-            {bathroom.gender_neutral && (
+            ) : null}
+            {bathroom.gender_neutral ? (
               <span className="rounded-full bg-white px-3 py-1">
                 Gender-neutral
               </span>
-            )}
-            {bathroom.family_friendly && (
+            ) : null}
+            {bathroom.family_friendly ? (
               <span className="rounded-full bg-white px-3 py-1">
                 Family-friendly
               </span>
-            )}
-            {bathroom.requires_code && (
+            ) : null}
+            {bathroom.requires_code ? (
               <span className="rounded-full bg-white px-3 py-1">
                 Requires code
               </span>
-            )}
+            ) : null}
           </div>
         </div>
 
-        {verificationMessage && (
-          <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800">
-            {verificationMessage}
+        {bathroom.notes ? (
+          <div className="space-y-2 rounded-2xl bg-zinc-50 p-4">
+            <h2 className="text-sm font-semibold text-zinc-900">Community notes</h2>
+            <p className="text-sm text-zinc-700">{bathroom.notes}</p>
           </div>
-        )}
+        ) : null}
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <a
             href={directionsHref}
             target="_blank"
@@ -272,19 +235,10 @@ export default function BathroomDetailPage() {
 
           <button
             type="button"
-            onClick={handleVerify}
-            disabled={isVerifying}
-            className="rounded-full border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isVerifying ? "Verifying..." : "Confirm location"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => router.push(`/bathroom/${bathroom.id}/edit`)}
+            onClick={() => router.push("/")}
             className="rounded-full border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
           >
-            Edit info
+            Back to map
           </button>
         </div>
       </section>
