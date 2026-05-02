@@ -1,74 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db/init";
+import Database from "better-sqlite3";
+
+const db = new Database("data/loomap.db");
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bathroomId = params.id;
+    const { id } = await context.params;
     const body = await request.json();
 
-    // Get current bathroom data
-    const bathroom = db.prepare("SELECT * FROM bathrooms WHERE id = ?").get(bathroomId) as any;
+    const issueType = String(body.issueType || "").trim();
+    const details = String(body.details || "").trim();
 
-    if (!bathroom) {
+    if (!issueType) {
       return NextResponse.json(
-        { error: "Bathroom not found" },
-        { status: 404 }
+        { error: "Issue type is required" },
+        { status: 400 }
       );
     }
 
-    // Save the individual report
-    const reportId = `report-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const insertReport = db.prepare(`
-      INSERT INTO reports (id, bathroom_id, reason, notes)
-      VALUES (?, ?, ?, ?)
-    `);
-    
-    insertReport.run(reportId, bathroomId, body.reason, body.notes || null);
-
-    // Increment report count
-    const newReportCount = bathroom.report_count + 1;
-    
-    // Mark as uncertain after 2 reports, closed after 5 reports
-    let newStatus = bathroom.status;
-    if (newReportCount >= 5) {
-      newStatus = "closed";
-    } else if (newReportCount >= 2 && bathroom.status === "open") {
-      newStatus = "uncertain";
-    }
-
-    // Update the bathroom
-    const updateStmt = db.prepare(`
-      UPDATE bathrooms 
-      SET 
-        report_count = ?,
-        status = ?,
-        trust_score = ?
-      WHERE id = ?
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS bathroom_reports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bathroom_id TEXT NOT NULL,
+        issue_type TEXT NOT NULL,
+        details TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
     `);
 
-    // Decrease trust score with each report
-    const newTrustScore = Math.max(0, bathroom.trust_score - 15);
+    db.prepare(
+      `
+        INSERT INTO bathroom_reports (bathroom_id, issue_type, details)
+        VALUES (?, ?, ?)
+      `
+    ).run(id, issueType, details);
 
-    updateStmt.run(newReportCount, newStatus, newTrustScore, bathroomId);
+    db.prepare(
+      `
+        UPDATE bathrooms
+        SET report_count = COALESCE(report_count, 0) + 1
+        WHERE id = ?
+      `
+    ).run(id);
+
+    const updatedBathroom = db
+      .prepare(
+        `
+          SELECT id, report_count
+          FROM bathrooms
+          WHERE id = ?
+        `
+      )
+      .get(id);
 
     return NextResponse.json({
       success: true,
-      reportCount: newReportCount,
-      status: newStatus,
-      trustScore: newTrustScore,
-      message: newStatus === "closed" 
-        ? "This bathroom has been marked as closed due to multiple reports."
-        : newStatus === "uncertain"
-        ? "This bathroom has been flagged as uncertain. More reports may close it."
-        : "Thank you for reporting. We'll review this location."
+      report: {
+        bathroom_id: id,
+        issue_type: issueType,
+        details,
+      },
+      bathroom: updatedBathroom ?? null,
     });
   } catch (error) {
-    console.error("Error reporting bathroom:", error);
+    console.error("Error submitting bathroom report:", error);
     return NextResponse.json(
-      { error: "Failed to report bathroom" },
+      { error: "Failed to submit report" },
       { status: 500 }
     );
   }

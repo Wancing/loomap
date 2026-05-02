@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { TrustBadge } from "@/components/trust-badge";
 import { getStatusLabel, getStatusColor } from "@/components/bathroom-marker";
+import { getVerificationStatus, getTrustScore } from "@/lib/bathroom-status";
 import type { Bathroom } from "@/lib/types";
 
 export default function BathroomDetailPage() {
@@ -78,6 +80,8 @@ export default function BathroomDetailPage() {
     );
   }
 
+  const verificationStatus = getVerificationStatus(bathroom);
+  const computedTrustScore = getTrustScore(bathroom);
   const directionsHref = `https://www.google.com/maps/dir/?api=1&destination=${bathroom.latitude},${bathroom.longitude}`;
 
   return (
@@ -101,10 +105,10 @@ export default function BathroomDetailPage() {
             </h1>
             <span
               className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(
-                bathroom.status
+                verificationStatus
               )}`}
             >
-              {getStatusLabel(bathroom.status)}
+              {getStatusLabel(verificationStatus)}
             </span>
             {bathroom.source ? (
               <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-600">
@@ -123,7 +127,7 @@ export default function BathroomDetailPage() {
         </div>
 
         <TrustBadge
-          trustScore={bathroom.trust_score}
+          trustScore={computedTrustScore}
           confirmations={bathroom.number_of_confirmations}
         />
 
@@ -223,7 +227,7 @@ export default function BathroomDetailPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-4">
           <a
             href={directionsHref}
             target="_blank"
@@ -232,6 +236,20 @@ export default function BathroomDetailPage() {
           >
             Get directions
           </a>
+
+          <Link
+            href={`/bathroom/${bathroom.id}/edit`}
+            className="rounded-full border border-zinc-300 bg-white px-4 py-3 text-center text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+          >
+            Edit
+          </Link>
+
+          <Link
+            href={`/bathroom/${bathroom.id}/report`}
+            className="rounded-full border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+          >
+            Report
+          </Link>
 
           <button
             type="button"
